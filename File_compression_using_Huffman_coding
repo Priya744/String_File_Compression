@@ -1,0 +1,134 @@
+#include<bits/stdc++.h>
+using namespace std;
+class Htree{
+    public:
+    int data;
+    char letter;
+    Htree *left;
+    Htree *right;
+    Htree(int data,char c){
+        this->data=data;
+        this->letter=c;
+        this->left=NULL;
+        this->right=NULL;
+    }
+};
+class compare{
+    public:
+    bool operator()(Htree *a, Htree *b){
+        if(a->data>b->data)return true;
+        else return false;
+    }
+};
+
+
+
+//Step1: Storing the frequency of each element
+vector<pair<int,char>> calculating_frequency(string st){
+    int n=st.size();
+    vector<pair<int,char>> ans;
+    map<int,char> mpp;
+    //updating all letters of string to ordered map
+    for(int i=0;i<n;i++) mpp[st[i]]++;
+    for(int i=0;i<n;i++){
+            //store the count of elements
+        if(mpp[st[i]]!=0){
+            ans.push_back(make_pair(mpp[st[i]],st[i]));
+            mpp[st[i]]=0;
+        }
+        
+        // and removed a if statement-> 
+    }
+    return ans;
+}
+
+//Step 2:form a tree using priority queuue and merge the ones with lowest priority
+Htree *formtree(vector<pair<int,char>> &f){
+    priority_queue<Htree*,vector<Htree*>,compare> pq;
+    for(int i=0;i<f.size();i++){
+        //inserting all the elements into priority queue
+        pq.push(new Htree(f[i].first,f[i].second));
+    }
+    while(pq.size()>1){
+        //2 smallest elements at the top will combine to form a new node
+        Htree *left=pq.top();
+        pq.pop();
+        Htree *right=pq.top();
+        pq.pop();
+        Htree *tem= new Htree(left->data+right->data,'-');
+        tem->left=left;
+        tem->right=right;
+        pq.push(tem);
+    }
+    return pq.top();
+    //pq.top() will give the root node
+}
+
+//Step 3: traverse and store the encoded values
+void get_encoded_values(Htree *root,string st,vector<pair<char,string>> &vec){
+    if(root==NULL)return;
+    if(root->letter!='-'){
+        vec.push_back(make_pair(root->letter,st));
+        return;
+    }
+    else{
+        get_encoded_values(root->left,st+"0",vec);
+        get_encoded_values(root->right,st+"1",vec);
+    }
+}
+
+string huffman_decompress(Htree *tree, string str){
+    string s=" ";
+    Htree *start=tree;
+    for(int ind=0;ind<str.size();ind++){
+        if(str[ind]=='0'){
+            start=start->left;
+        }
+        else{
+            start=start->right;
+        }
+        if(start->left==NULL && start->right==NULL){
+            s+=start->letter;
+            start=tree;
+        }
+    }
+    return s;
+}
+
+void huffman_compress(string s){
+    vector<pair<char,string>> vec;
+    vector<pair<int,char>> f=calculating_frequency(s);
+    Htree *root= formtree(f);
+    get_encoded_values(root,"",vec);
+    string ans="";
+    for(auto i: vec){
+        cout<<i.first<<" "<<i.second<<endl;
+        ans+=i.second;
+    }
+    string decod=huffman_decompress(root,ans);
+    double cmp=(double)((ceil(ans.length()/8))/(8*(s.length()))*100);//convert all in bytes
+    cout<<"----------------------------------"<<endl;
+    cout<<"Orignal data: "<<endl;
+    cout<<s<<endl;
+    cout<<"----------------------------------"<<endl;
+    cout<<"Compressed data: "<<endl;
+    cout<<ans<<endl;
+    cout<<"----------------------------------"<<endl;
+    cout<<"Percentage compressed: "<<endl;
+    cout<<cmp<<endl;
+    cout<<"----------------------------------"<<endl;
+    cout<<"Decompressed data: "<<endl;
+    cout<<decod<<endl;
+    cout<<"----------------------------------"<<endl;
+}
+int main(){
+    string s;
+    fstream in("sample.txt");
+    if(in.is_open()){
+        while(getline(in,s)){
+            huffman_compress(s);
+        }
+        in.close();
+    }
+   return 0;
+}
